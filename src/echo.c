@@ -12,6 +12,6 @@ int main(int argc, char **argv){
             putchar(' ');
         }
     }
-    puts("");
+    putchar('\n');
     return 0;
 }
