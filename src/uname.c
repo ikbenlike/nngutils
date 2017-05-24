@@ -85,31 +85,31 @@ int main(int argc, char **argv){
     }
 
     if(args->p_kname || args->p_all || argc == 1){
-        printf(buf->sysname);
+        fputs(buf->sysname, stdout);
         if(args->count > 1){
             putchar(' ');
         }
     }
     if(args->p_nname || args->p_all){
-        printf(buf->nodename);
+        fputs(buf->nodename, stdout);
         if(args->count > 1){
             putchar(' ');
         }
     }
     if(args->p_krelease || args->p_all){
-        printf(buf->release);
+        printf(buf->release, stdout);
         if(args->count > 1){
             putchar(' ');
         }
     }
     if(args->p_kversion || args->p_all){
-        printf(buf->version);
+        fputs(buf->version, stdout);
         if(args->count > 1){
             putchar(' ');
         }
     }
     if(args->p_machine || args->p_all){
-        printf(buf->machine);
+        fputs(buf->machine, stdout);
         if(args->count > 1){
             putchar(' ');
         }
@@ -123,7 +123,7 @@ int main(int argc, char **argv){
         }
     }
     if(args->p_os || args->p_all){
-        printf("GNU/Linux");
+        printf("GNU/Linux"); //just hardcoded for now
     }
     putchar('\n');
     free(args);
