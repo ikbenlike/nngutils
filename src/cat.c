@@ -69,12 +69,33 @@ struct cat_args *parse_arg(struct cat_args *args, int argc, char **argv){
 
 int print_file(int fd, struct cat_args *args, char *name){
     int endchar;
+    static unsigned long int nline = 0;
     char *buf = calloc(1, 4096 * sizeof(char));
     if(buf == NULL){
         fprintf(stderr, "%s: %s\n", name, strerror(errno));
         exit(1);
     }
     int buf_len = read(fd, buf, 4096);
+    if(args->number){
+        if(nline < 9){
+            printf("     %lu  ", ++nline);
+        }
+        else if(nline < 99){
+            printf("    %lu  ", ++nline);
+        }
+        else if(nline < 999){
+            printf("   %lu  ", ++nline);
+        }
+        else if(nline < 9999){
+            printf("  %lu  ", ++nline);
+        }
+        else if(nline < 99999){
+            printf(" %lu  ", ++nline);
+        }
+        else{ 
+            printf("%lu  ", ++nline);
+        }
+    }
     while(buf_len != 0){
         for(int i = 0; i < buf_len; i++){
             if(args->show_ends && buf[i] == '\n'){
@@ -84,8 +105,27 @@ int print_file(int fd, struct cat_args *args, char *name){
                 fputs("^I", stdout);
                 continue;
             }
-            else if(args->number && buf[i] == '\n'){
-                
+            else if(args->number && buf[i] == '\n' && i + 1 < buf_len){
+                fputc(buf[i], stdout);
+                if(nline < 9){
+                    printf("     %lu  ", ++nline);
+                }
+                else if(nline < 99){
+                    printf("    %lu  ", ++nline);
+                }
+                else if(nline < 999){
+                    printf("   %lu  ", ++nline);
+                }
+                else if(nline < 9999){
+                    printf("  %lu  ", ++nline);
+                }
+                else if(nline < 99999){
+                    printf(" %lu  ", ++nline);
+                }
+                else{ 
+                    printf("%lu  ", ++nline);
+                }
+                continue;
             }
             fputc(buf[i], stdout);
         }
@@ -122,7 +162,7 @@ int main(int argc, char **argv){
         return 1;
     }
     args = parse_arg(args, argc, argv);
-    if(argc == 1){
+    if(argc == 1 || args->fcount == 0){
         args->files[0] = calloc(1, 2 * sizeof(char));
         strcpy(args->files[0], "-");
         args->fcount = 1;
