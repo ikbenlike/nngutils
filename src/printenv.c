@@ -3,7 +3,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-int main(int argc, char **argv, char **environ){
+extern char **environ;
+
+int main(int argc, char **argv){
     char *var;
     int ret = 0;
     if(argc == 1){
