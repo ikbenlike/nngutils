@@ -20,7 +20,7 @@ struct uname_args {
 };
 
 
-struct uname_args *parse_arg(struct uname_args *args ,int argc, char **argv){
+struct uname_args *parse_arg(struct uname_args *args, int argc, char **argv){
     //struct uname_args args;
     args->count = 0;
     for(int i = 1; i < argc; i++){
