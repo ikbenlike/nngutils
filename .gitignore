@@ -5,3 +5,4 @@
 *.so
 *.lib
 *.dll
+vgcore.*

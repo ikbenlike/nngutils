@@ -15,37 +15,46 @@ struct env_args {
     char *command;
     char **args;
     int argc;
+    char **vars;
+    int nvar;
 };
 
 struct env_args *parse_arg(struct env_args *args, int argc, char **argv){
-    args->nunset = 0;
     args->unset = calloc(1, sizeof(char*) * argc);
     args->args = calloc(1, sizeof(char*) * argc);
+    args->vars = calloc(1, sizeof(char*) * argc);
+    args->nunset = 0;
+    args->nvar = 0;
     args->argc = 0;
     args->command = NULL;
-    if(args->unset == NULL || args->args == NULL){
+    bool com = false;
+    if(args->unset == NULL || args->args == NULL || args->vars == NULL){
         fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
         exit(1);
     }
     for(int i = 1; i < argc; i++){
-        if(!strcmp(argv[i], "-i") || !strcmp(argv[i], "--ignore-environment") || !strcmp(argv[i], "-")){
-            args->ignore_env = true;
-        }
-        else if(!strcmp(argv[i], "-0") || !strcmp(argv[i], "--null")){
-            args->null = true;
-        }
-        else if(!strcmp(argv[i], "-u")){
-            if(i + 1 >= argc){
-                fprintf(stderr, "%s: missing operand after -u\n", argv[0]);
-                exit(1);
+        if(argv[i][0] == '-'){
+            if(!strcmp(argv[i], "-i") || !strcmp(argv[i], "--ignore-environment") || !strcmp(argv[i], "-")){
+                args->ignore_env = true;
             }
-            else {
-                args->unset[args->nunset++] = argv[++i];
+            else if(!strcmp(argv[i], "-0") || !strcmp(argv[i], "--null")){
+                args->null = true;
             }
+            else if(!strcmp(argv[i], "-u")){
+                if(i + 1 >= argc){
+                    fprintf(stderr, "%s: missing operand after -u\n", argv[0]);
+                    exit(1);
+                }
+                else {
+                    args->unset[args->nunset++] = argv[++i];
+                }
+            }
+        }
+        else if(strchr(argv[i], '=') != NULL && com == false){
+            args->vars[args->nvar++] = argv[i];
         }
         else {
-            args->command = argv[i++];
-            args->args[args->argc++] = args->command;
+            args->command = argv[i];
             for(int a = i; a < argc; a++){
                 args->args[args->argc++] = argv[a];
             }
@@ -77,6 +86,14 @@ int main(int argc, char **argv){
             puts(args->unset[i]);
         }
     }
+    if(args->nvar > 0){
+        for(int i = 0; i < args->nvar; i++){
+            if(putenv(args->vars[i]) != 0){
+                fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
+                return 1;
+            }
+        }
+    }
     if(args->nunset > 0){
         for(int i = 0; i < args->nunset; i++){
             if(unsetenv(args->unset[i]) == -1){
@@ -89,11 +106,19 @@ int main(int argc, char **argv){
         for(int i = 0; environ[i] != NULL; i++){
             puts(environ[i]);
         }
+        free(args->unset);
+        free(args->vars);
+        free(args->args);
+        free(args);
         return 0;
     }
     if(execvp(args->command, args->args) == -1){
         fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
         return 1;
     }
+    free(args->unset);
+    free(args->vars);
+    free(args->args);
+    free(args);
     return 0;
 }
