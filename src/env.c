@@ -22,6 +22,7 @@ struct env_args *parse_arg(struct env_args *args, int argc, char **argv){
     args->unset = calloc(1, sizeof(char*) * argc);
     args->args = calloc(1, sizeof(char*) * argc);
     args->argc = 0;
+    args->command = NULL;
     for(int i = 1; i < argc; i++){
         if(!strcmp(argv[i], "-i") || !strcmp(argv[i], "--ignore-environment") || !strcmp(argv[i], "-")){
             args->ignore_env = true;
@@ -35,19 +36,16 @@ struct env_args *parse_arg(struct env_args *args, int argc, char **argv){
                 exit(1);
             }
             else {
-                args->unset[args->nunset++] = argv[i++];
+                args->unset[args->nunset++] = argv[++i];
             }
         }
         else {
             args->command = argv[i++];
+            args->args[args->argc++] = args->command;
             for(int a = i; a < argc; a++){
                 args->args[args->argc++] = argv[a];
             }
             args->args[args->argc] = NULL;
-            if(args->argc == 0){
-                puts("null");
-                args->args[0] = NULL;
-            }
             break;
         }
     }
@@ -63,14 +61,13 @@ int main(int argc, char **argv){
     }
     struct env_args *args = calloc(1, sizeof(struct env_args));
     args = parse_arg(args, argc, argv);
-    puts(args->command);
-    /*if(args->argc != 0){
-        for(int i = 0; i < args->argc; i++){
-            puts(args->args[i]);
-        }
-    }*/
     if(args->ignore_env){
         *environ = NULL;
+    }
+    if(args->nunset > 0){
+        for(int i = 0; i < args->nunset; i++){
+            puts(args->unset[i]);
+        }
     }
     if(args->nunset > 0){
         for(int i = 0; i < args->nunset; i++){
@@ -80,8 +77,11 @@ int main(int argc, char **argv){
             }
         }
     }
-    if(args->args[0] == NULL){
-        puts("null");
+    if(args->command == NULL){
+        for(int i = 0; environ[i] != NULL; i++){
+            puts(environ[i]);
+        }
+        return 0;
     }
     if(execvp(args->command, args->args) == -1){
         fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
