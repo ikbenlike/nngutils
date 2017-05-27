@@ -23,6 +23,10 @@ struct env_args *parse_arg(struct env_args *args, int argc, char **argv){
     args->args = calloc(1, sizeof(char*) * argc);
     args->argc = 0;
     args->command = NULL;
+    if(args->unset == NULL || args->args == NULL){
+        fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
+        exit(1);
+    }
     for(int i = 1; i < argc; i++){
         if(!strcmp(argv[i], "-i") || !strcmp(argv[i], "--ignore-environment") || !strcmp(argv[i], "-")){
             args->ignore_env = true;
@@ -60,6 +64,10 @@ int main(int argc, char **argv){
         return 0;
     }
     struct env_args *args = calloc(1, sizeof(struct env_args));
+    if(args == NULL){
+        fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
+        return 1;
+    }
     args = parse_arg(args, argc, argv);
     if(args->ignore_env){
         *environ = NULL;
