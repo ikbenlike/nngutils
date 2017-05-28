@@ -56,5 +56,7 @@ int main(int argc, char **argv){
             }
         }
     }
+    free(args->paths);
+    free(args);
     return 0;
 }
