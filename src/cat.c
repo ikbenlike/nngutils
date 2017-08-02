@@ -55,6 +55,9 @@ struct cat_args *parse_arg(struct cat_args *args, int argc, char **argv){
             else if(!strcmp(argv[i], "-v") || !strcmp(argv[i], "--show-nonprinting")){
                 args->show_nonprinting = true;
             }
+            else if(!strcmp(argv[i], "-E") || !strcmp(argv[i], "--show-ends")){
+                args->show_ends = true;
+            }
             else {
                 fprintf(stderr, "%s: incorrect argument %s\n", argv[0], argv[i]);
                 exit(1);
@@ -101,11 +104,11 @@ int print_file(int fd, struct cat_args *args, char *name){
             if(args->show_ends && buf[i] == '\n'){
                 fputc('$', stdout);
             }
-            else if(args->show_tabs && buf[i] == '\t'){
+            if(args->show_tabs && buf[i] == '\t'){
                 fputs("^I", stdout);
                 continue;
             }
-            else if(args->number && buf[i] == '\n' && i + 1 < buf_len){
+            if(args->number && buf[i] == '\n' && i + 1 < buf_len){
                 fputc(buf[i], stdout);
                 if(nline < 9){
                     printf("     %lu  ", ++nline);
