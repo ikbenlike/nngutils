@@ -73,7 +73,7 @@ off_t wc_get_byte_count(int fd){
     return s.st_size;
 }
 
-wc_data wc_parse_file(int fd){
+/*wc_data wc_parse_file(int fd){
     char buf[4096];
     size_t linec = 0;
     size_t wordc = 0;
@@ -117,16 +117,16 @@ void formatted_print(ssize_t wordc, ssize_t linec, ssize_t bytec, char *name){
         printf("%zu %zu %s\n", (size_t)linec, (size_t)bytec, name);
     }
     else if(bytec == -1 && wordc != -1 && linec != -1){
-        prinf("%zu %zu %s\n", (size_t)wordc, (size_t)linec);
+        printf("%zu %zu %s\n", (size_t)wordc, (size_t)linec);
     }
-}
+}*/
 
 size_t wc_get_nl_count(int fd){
-    char buf[4069];
+    char buf[4096];
     size_t sum = 0;
     ssize_t n;
     lseek(fd, 0, SEEK_SET);
-    while((n = read(fd, buf, 4096)) > 0){
+    while((n = read(fd, buf, 4095)) > 0){
         for(size_t i = 0; i < n; i++){
             if(buf[i] == '\n'){
                 sum++;
@@ -167,7 +167,7 @@ int main(int argc, char **argv){
             fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
             return 1;
         }
-        if(args->byte_count){
+        /*if(args->byte_count){
             puts("byte count");
             printf("%zu\n", wc_get_byte_count(fd));
         }
@@ -178,7 +178,8 @@ int main(int argc, char **argv){
         if(args->word_count){
             puts("word count");
             printf("%zu\n", wc_get_word_count(fd));
-        }
+        }*/
+        printf("  %zu %zu %zu %s\n", wc_get_nl_count(fd), wc_get_word_count(fd), wc_get_byte_count(fd), args->files[i]);
     }
     return 0;
 }
