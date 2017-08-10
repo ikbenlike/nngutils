@@ -17,6 +17,13 @@ struct sh_args {
     char *command;
 };
 
+struct sh_command {
+    int out;
+    int in;
+    char **argv;
+    int argc;
+};
+
 struct sh_args *parse_arg(struct sh_args *args, int argc, char **argv){
     for(int i = 1; i < argc; i++){
         if(argv[i][0] == '-'){
@@ -43,7 +50,36 @@ struct sh_args *parse_arg(struct sh_args *args, int argc, char **argv){
     return args;
 }
 
+int command_get_argc(char *buffer){
+    int n = 0;
+    char *p;
+    while(p = strchr(buffer, ' ')){
+        n++;
+        buffer = p + 1;
+    }
+    return n;
+}
+
+struct sh_command *parse_command(char *buffer){
+    struct sh_command *command = calloc(1, sizeof(struct sh_command));
+    command->argc = command_get_argc(buffer) + 1;
+    command->argv = calloc(command->argc, sizeof(char*));
+    size_t len = strlen(buffer);
+    char *token = calloc(len + 1, sizeof(char));
+    for(int i = 0, n = 0; i < command->argc && n < len; i++ && n++){
+        int x = 0;
+        while(buffer[n] != ' ' && buffer[n] != EOF && buffer[n] != '\0'){
+            token[x++] = buffer[n]; 
+        }
+        token[x++] = '\0';
+        command->argv[i] = calloc(x, sizeof(char));
+        memcpy(command->argv[i], token, x);
+    }
+    return command;
+}
+
 int call_command(char **argv){
+    puts("call command");
     int status = 0;
     pid_t pid = fork();
     if(pid == -1){
@@ -52,9 +88,17 @@ int call_command(char **argv){
     }
     else if(pid){
         waitpid(pid, &status, 0);
+        if(WIFEXITED(status)){
+            status = WEXITSTATUS(status);
+        }
     }
     else {
-        exit(execvp(argv[0], argv));
+        puts("else");
+        if(execvp(argv[0], argv) == -1){
+            puts(argv[0]);
+            fprintf(stderr, "sh: %s\n", strerror(errno));
+            exit(1);
+        }
     }
     return status;
 }
@@ -69,9 +113,16 @@ int main(int argc, char **argv){
         puts(args->command);
         return call_command(&args->command);
     }
-    char buf[4096];
-    while(read(STDIN_FILENO, buf, 4096)){
-        call_command((char**)buf);
+    char **arg = calloc(2, sizeof(char*));
+    arg[0] = calloc(4096, sizeof(char));
+    arg[1] = NULL;
+    while(1){
+        int n = 0;
+        while(n = read(STDIN_FILENO, arg[0], 4096)){
+            printf("n = %d\n", n);
+            arg[0][n-1] = '\0';
+            printf("%d\n", call_command(arg));
+        }
     }
     return 0;
 }
