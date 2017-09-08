@@ -61,25 +61,33 @@ int command_get_argc(char *buffer){
 }
 
 struct sh_command *parse_command(char *buffer){
+    if(buffer[0] == EOF){
+        puts("exit");
+        exit(0);
+    }
     struct sh_command *command = calloc(1, sizeof(struct sh_command));
     command->argc = command_get_argc(buffer) + 1;
-    command->argv = calloc(command->argc, sizeof(char*));
+    command->argv = calloc(command->argc + 1, sizeof(char*));
     size_t len = strlen(buffer);
-    char *token = calloc(len + 1, sizeof(char));
+    char *token = calloc(len + 2, sizeof(char));
     for(int i = 0, n = 0; i < command->argc && n < len; i++ && n++){
         int x = 0;
         while(buffer[n] != ' ' && buffer[n] != EOF && buffer[n] != '\0'){
-            token[x++] = buffer[n]; 
+            token[x++] = buffer[n++];
+        }
+        if(i < 1){
+            n++;
         }
         token[x++] = '\0';
         command->argv[i] = calloc(x, sizeof(char));
         memcpy(command->argv[i], token, x);
     }
+    command->argv[command->argc] = NULL;
+    free(token);
     return command;
 }
 
-int call_command(char **argv){
-    puts("call command");
+int call_command(struct sh_command *command){
     int status = 0;
     pid_t pid = fork();
     if(pid == -1){
@@ -93,10 +101,11 @@ int call_command(char **argv){
         }
     }
     else {
-        puts("else");
-        if(execvp(argv[0], argv) == -1){
-            puts(argv[0]);
-            fprintf(stderr, "sh: %s\n", strerror(errno));
+        if(execvp(command->argv[0], command->argv) == -1){
+            fprintf(stderr, "sh: %s: %s\n", command->argv[0], strerror(errno));
+            for(int i = -1; command->argv[++i] != NULL; free(command->argv[i]));
+            free(command->argv);
+            free(command);
             exit(1);
         }
     }
@@ -104,25 +113,32 @@ int call_command(char **argv){
 }
 
 int main(int argc, char **argv){
+    struct sh_command *command;
     struct sh_args *args = calloc(1, sizeof(struct sh_args));
     if(args == NULL){
         fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
     }
     args = parse_arg(args, argc, argv);
     if(args->command){
-        puts(args->command);
-        return call_command(&args->command);
+        command = parse_command(args->command);
+        call_command(command);
+        free(command);
+        return 0;
     }
-    char **arg = calloc(2, sizeof(char*));
-    arg[0] = calloc(4096, sizeof(char));
-    arg[1] = NULL;
+    char *buffer = calloc(4096, sizeof(char));
     while(1){
-        int n = 0;
-        while(n = read(STDIN_FILENO, arg[0], 4096)){
-            printf("n = %d\n", n);
-            arg[0][n-1] = '\0';
-            printf("%d\n", call_command(arg));
+        write(STDOUT_FILENO, "nngsh-1.0$ ", 11);
+        ssize_t n = 0;
+        n += read(STDIN_FILENO, buffer, 4096);
+        if(n == 0){
+            puts("exit");
+            return 0;
         }
+        buffer[n-1] = '\0';
+        struct sh_command *command = parse_command(buffer);
+        call_command(command);
+        memset(buffer, 0, n);
+        free(command);
     }
     return 0;
 }
