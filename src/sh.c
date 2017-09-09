@@ -69,15 +69,10 @@ int command_get_argc(char *buffer){
     return n;
 }
 
-struct sh_command *parse_command(char *buffer){
-    if(buffer[0] == EOF){
-        puts("exit");
-        exit(0);
-    }
+struct sh_command *parse_command(char *buffer, size_t len){
     struct sh_command *command = calloc(1, sizeof(struct sh_command));
     command->argc = command_get_argc(buffer) + 1;
     command->argv = calloc(command->argc + 1, sizeof(char*));
-    size_t len = strlen(buffer);
     char *token = calloc(len + 2, sizeof(char));
     for(int i = 0, n = 0; i < command->argc && n < len; i++ && n++){
         int x = 0;
@@ -121,23 +116,21 @@ int call_command(struct sh_command *command){
     return status;
 }
 
-/*
-    add shit like signal handling you twat
-*/
-
 int main(int argc, char **argv){
-    struct sh_command *command;
-    struct sh_args *args = calloc(1, sizeof(struct sh_args));
-    if(args == NULL){
-        fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
-    }
     signal(SIGINT, sigint_handler);
-    args = parse_arg(args, argc, argv);
-    if(args->command){
-        command = parse_command(args->command);
-        call_command(command);
-        free(command);
-        return 0;
+    struct sh_command *command = NULL;
+    if(argc > 1){
+        struct sh_args *args = calloc(1, sizeof(struct sh_args));
+        if(args == NULL){
+            fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
+        }
+        args = parse_arg(args, argc, argv);
+        if(args->command){
+            command = parse_command(args->command, strlen(args->command));
+            call_command(command);
+            free(command);
+            return 0;
+        }
     }
     char *buffer = calloc(4096, sizeof(char));
     while(1){
@@ -148,10 +141,12 @@ int main(int argc, char **argv){
             puts("exit");
             return 0;
         }
+        else if(n == 1){
+            continue;
+        }
         buffer[n-1] = '\0';
-        struct sh_command *command = parse_command(buffer);
+        command = parse_command(buffer, n);
         call_command(command);
-        memset(buffer, 0, n);
         free(command);
     }
     return 0;
