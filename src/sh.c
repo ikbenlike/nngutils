@@ -113,13 +113,22 @@ int sh_is_builtin(char *command){
     else if(!strcmp(command, "alias")){
         return shb_alias;
     }
+    else if(!strcmp(command, "unalias")){
+        return shb_unalias;
+    }
     return -1;
 }
 
 int run_builtin(enum sh_builtins code, struct sh_command *command){
     if(code == shb_exit){
         if(command->argc == 2){
-            sh_exit((int)strtol(command->argv[1], NULL, 10));
+            char **end;
+            int ret = (int)strtol(command->argv[1], end, 10);
+            if(end[0][0] == command->argv[1][0]){
+                fprintf(stderr, "sh: exit: %s: numeric argument required\n", command->argv[1]);
+                sh_exit(2);
+            }
+            sh_exit(ret);
         }
         sh_exit(0);
     }
