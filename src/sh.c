@@ -119,6 +119,24 @@ int sh_is_builtin(char *command){
     return -1;
 }
 
+int sh_cd(char *path){
+    if(!path){
+        char *res = getenv("HOME");
+        if(res){
+            path = res;
+        }
+        else {
+            return 0;
+        }
+    }
+    int cd_res = chdir(path);
+    if(cd_res == -1){
+        fprintf(stderr, "cd: %s: %s\n", strerror(errno), path);
+        return errno;
+    }
+    return 0;
+}
+
 int run_builtin(enum sh_builtins code, struct sh_command *command){
     if(code == shb_exit){
         if(command->argc == 2){
@@ -131,6 +149,9 @@ int run_builtin(enum sh_builtins code, struct sh_command *command){
             sh_exit(ret);
         }
         sh_exit(0);
+    }
+    else if(code == shb_cd){
+        return sh_cd(command->argv[1]);
     }
     return 0;
 }
