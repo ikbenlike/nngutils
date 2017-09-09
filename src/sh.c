@@ -3,10 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+
+#define SH_PROMPT "nngsh-1.0$ "
 
 extern char **environ;
 
@@ -23,6 +26,12 @@ struct sh_command {
     char **argv;
     int argc;
 };
+
+void sigint_handler(int sig){
+    write(STDOUT_FILENO, "\n", 1);
+    write(STDOUT_FILENO, SH_PROMPT, strlen(SH_PROMPT));
+    return;
+}
 
 struct sh_args *parse_arg(struct sh_args *args, int argc, char **argv){
     for(int i = 1; i < argc; i++){
@@ -112,12 +121,17 @@ int call_command(struct sh_command *command){
     return status;
 }
 
+/*
+    add shit like signal handling you twat
+*/
+
 int main(int argc, char **argv){
     struct sh_command *command;
     struct sh_args *args = calloc(1, sizeof(struct sh_args));
     if(args == NULL){
         fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
     }
+    signal(SIGINT, sigint_handler);
     args = parse_arg(args, argc, argv);
     if(args->command){
         command = parse_command(args->command);
@@ -127,7 +141,7 @@ int main(int argc, char **argv){
     }
     char *buffer = calloc(4096, sizeof(char));
     while(1){
-        write(STDOUT_FILENO, "nngsh-1.0$ ", 11);
+        write(STDOUT_FILENO, SH_PROMPT, strlen(SH_PROMPT));
         ssize_t n = 0;
         n += read(STDIN_FILENO, buffer, 4096);
         if(n == 0){
