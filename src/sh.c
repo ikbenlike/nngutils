@@ -118,6 +118,9 @@ int sh_is_builtin(char *command){
 
 int run_builtin(enum sh_builtins code, struct sh_command *command){
     if(code == shb_exit){
+        if(command->argc == 2){
+            sh_exit((int)strtol(command->argv[1], NULL, 10));
+        }
         sh_exit(0);
     }
     return 0;
