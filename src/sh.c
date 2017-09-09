@@ -11,6 +11,13 @@
 
 #define SH_PROMPT "nngsh-1.0$ "
 
+enum sh_builtins {
+    shb_exit,
+    shb_alias,
+    shb_unalias,
+    shb_cd,
+};
+
 extern char **environ;
 
 struct sh_args {
@@ -31,6 +38,11 @@ void sigint_handler(int sig){
     write(STDOUT_FILENO, "\n", 1);
     write(STDOUT_FILENO, SH_PROMPT, strlen(SH_PROMPT));
     return;
+}
+
+void sh_exit(int code){
+    puts("exit");
+    exit(code);
 }
 
 struct sh_args *parse_arg(struct sh_args *args, int argc, char **argv){
@@ -91,8 +103,33 @@ struct sh_command *parse_command(char *buffer, size_t len){
     return command;
 }
 
+int sh_is_builtin(char *command){
+    if(!strcmp(command, "exit")){
+        return shb_exit;
+    }
+    else if(!strcmp(command, "cd")){
+        return shb_cd;
+    }
+    else if(!strcmp(command, "alias")){
+        return shb_alias;
+    }
+    return -1;
+}
+
+int run_builtin(enum sh_builtins code, struct sh_command *command){
+    if(code == shb_exit){
+        sh_exit(0);
+    }
+    return 0;
+}
+
 int call_command(struct sh_command *command){
     int status = 0;
+    int builtin = sh_is_builtin(command->argv[0]);
+    if(builtin != -1){
+        status = run_builtin(builtin, command);
+        return status;
+    }
     pid_t pid = fork();
     if(pid == -1){
         fprintf(stderr, "sh: %s\n", strerror(errno));
@@ -138,8 +175,7 @@ int main(int argc, char **argv){
         ssize_t n = 0;
         n += read(STDIN_FILENO, buffer, 4096);
         if(n == 0){
-            puts("exit");
-            return 0;
+            sh_exit(0);
         }
         else if(n == 1){
             continue;
